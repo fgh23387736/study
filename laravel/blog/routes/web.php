@@ -45,3 +45,7 @@ Route::get('test/Route', function () {
 
 	return ' ' . $name . ',' . $action;
 })->name('theUrl');
+
+Route::get('test/Middleware', function(){
+	return 'lll';
+})->middleware('token');
