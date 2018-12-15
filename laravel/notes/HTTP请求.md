@@ -177,3 +177,125 @@ eg: 请求路径为：`http://domain.com/user/1`
 > 在`blade`模板中可以使用`old()`函数
 	
 	<input type="text" name="username" value="{{ old('username') }}">
+
+#### Cookie
+##### 从请求中取出Cookie
+> laravel的cookie会自动加密
+
+	$value = $request->cookie('name');
+	$value = Cookie::get('name);
+	//以上两种方法都可以获得cookie
+
+##### 添加Cookie到响应
+可以使用`cookie`方法将一个`Cookie`添加到返回的`Response`实例，需要传递名称，值，以及有效期(分钟)到这个方法：
+
+	return response('你好')->cookie(
+		'name', '学院君', $minutes
+	);
+
+cookie 方法可以接收一些使用频率较低的参数，一般来说，这些参数和 PHP 原生函数 setcookie 作用和意义一致：
+	
+	return response('欢迎来到 Laravel 学院')->cookie(
+	    'name', '学院君', $minutes, $path, $domain, $secure, $httpOnly
+	);
+
+添加用于附件的cookie到响应队列，这些Cookie会在响应发送到浏览器之前添加上
+
+	Cookie::queue(Cookie::make('name', 'value', $minutes));
+	
+	Cookie::queue('name', 'value', $minutes);
+
+##### 生成Cookie实例
+
+	$cookie = cookie('name', '学院君', $minutes);
+	return response('欢迎来到 Laravel 学院')->cookie($cookie);
+
+
+#### 文件上传
+##### 获得上传的文件
+> `Illuminate\Http\UploadedFile` 看一下这个类
+
+	$file = $request->file('photo');
+	$file = $request->photo;
+	//以上两种方法都可以
+	
+使用`hasFile`方法检测文件是否存在与请求中
+
+	if($request->hasFile('photo')) {
+		//code
+	}
+
+##### 验证文件是否上传成功
+使用`isValid`方法判断文件再上传过程中是否出错
+	
+	if($request->file('photo')->isValid()){
+		//code
+	}
+
+##### 文件路径&扩展名
+`UploadedFile` 类还提供了访问上传文件绝对路径和扩展名的方法。 `extension` 方法可以基于文件内容判断文件扩展名，该扩展名可能会和客户端提供的扩展名不一致：
+
+	$path = $request->photo->path();
+	$extension = $request->photo->extension();
+
+##### 其他方法
+> 看API
+
+#### 保存上传的文件
+要保存上传的文件，需要使用配置的某个文件系统，对应配置位于`config/filesystems.php`:
+![](https://static.laravelacademy.org/wp-content/uploads/2018/03/15064074232597.jpg)	
+
+laravel 默认使用`local`配置存放上传文件，即本地文件系统，默认根目录是`storage/app`,`public`也是本地文件系统，只不过存放在这里的文件可以被公开访问，其对应根目录是`storage/app/public`,要让web用户访问到该目录下存放文件的前提是在应用入口`public`目录下建一个软连接`storage`连接到`storage/app/public`
+
+UploadedFile 类有一个 store 方法，该方法会将上传文件移动到相应的磁盘路径上，该路径可以是本地文件系统的某个位置，也可以是云存储（如Amazon S3）上的路径。
+
+store 方法接收一个文件保存的相对路径（相对于文件系统配置的根目录 ），该路径不需要包含文件名，因为系统会自动生成一个唯一ID作为文件名。
+
+store 方法还接收一个可选的参数 —— 用于存储文件的磁盘名称作为第二个参数（对应文件系统配置 disks 的键名，默认值是 local），该方法会返回相对于根目录的文件路径：
+
+	$path = $request->photo->store('images');
+	$path = $request->photo->store('images', 's3');
+
+如果你不想自动生成文件名，可以使用 storeAs 方法，该方法接收保存路径、文件名和磁盘名作为参数：
+
+	$path = $request->photo->storeAs('images', 'filename.jpg');
+	$path = $request->photo->storeAs('images', 'filename.jpg', 's3');
+
+#### 配置信任代理
+
+要解决这个问题可以使用 `App\Http\Middleware\TrustProxies` 中间件,配置其中的`$proxies`属性列表
+
+	<?php
+
+	namespace App\Http\Middleware;
+	
+	use Illuminate\Http\Request;
+	use Fideloper\Proxy\TrustProxies as Middleware;
+	
+	class TrustProxies extends Middleware
+	{
+	    /**
+	     * The trusted proxies for this application.
+	     *
+	     * @var array
+	     */
+	    protected $proxies = [
+	        '192.168.1.1',
+	        '192.168.1.2',
+	    ];
+	
+	    /**
+	     * The headers that should be used to detect proxies.
+	     *
+	     * @var string
+	     */
+	    protected $headers = Request::HEADER_X_FORWARDED_ALL;
+	}
+	
+
+
+或者使用通配符'*'
+
+	protected $proxies = '*';
+
+	
