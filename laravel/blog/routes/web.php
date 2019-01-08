@@ -21,7 +21,7 @@ Route::get('hello', function() {
 
 Route::get('user/profile', function() {
 	return 'my url ' . route('profile');
-})->name('profile');
+});
 
 Route::get('user/{id}/profile', function($id) {
 	$url = route('profile', ['id' => $id]);
@@ -49,3 +49,9 @@ Route::get('test/Route', function () {
 Route::get('test/Middleware', function(){
 	return 'lll';
 })->middleware('token');
+
+Route::get('test/download', function(){
+	return response()->streamDownload(function(){
+		echo '66666';
+	}, 'mytest.txt');
+});
